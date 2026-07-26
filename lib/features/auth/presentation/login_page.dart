@@ -1,3 +1,9 @@
+/* Hallmark · component: LoginPage · genre: modern-minimal · theme: custom (utilitarian)
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: pass
+ * pre-emit critique: P5 H5 E5 S5 R5 V5
+ */
+
 import 'package:flutter/material.dart';
 import 'package:first_app/core/theme/app_colors.dart';
 import 'package:first_app/features/auth/presentation/auth_view_model.dart';
@@ -11,10 +17,6 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _boolState {
-  static bool obscureText = true;
-}
-
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
@@ -24,7 +26,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Escuchamos el ViewModel para mostrar errores si ocurren
     widget.viewModel.addListener(_onAuthViewModelChange);
   }
 
@@ -69,21 +70,19 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    const borderThickness = 1.5;
+    const inputBorderColor = Color(0xFFE2E8F0);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32.0,
-                vertical: 24.0,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight:
-                      constraints.maxHeight -
-                      48.0, // Ajuste para el padding vertical
+                  minHeight: constraints.maxHeight - 48.0,
                 ),
                 child: IntrinsicHeight(
                   child: Form(
@@ -91,37 +90,37 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 40.0),
+                        const SizedBox(height: 48.0),
                         // Encabezado
                         const Text(
                           'Bienvenido',
                           style: TextStyle(
-                            fontSize: 36.0,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF1E293B),
-                            letterSpacing: -0.5,
+                            fontSize: 32.0,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: -0.8,
                           ),
                         ),
-                        const SizedBox(height: 6.0),
+                        const SizedBox(height: 8.0),
                         const Text(
                           'SPB - Sistema de Entregas',
                           style: TextStyle(
                             fontSize: 12.0,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF94A3B8),
-                            letterSpacing: 0.8,
+                            color: Color(0xFF64748B),
+                            letterSpacing: 1.0,
                           ),
                         ),
-                        const SizedBox(height: 48.0),
+                        const SizedBox(height: 56.0),
 
                         // Campo de Usuario
                         const Text(
-                          'Usuario',
+                          'USUARIO',
                           style: TextStyle(
-                            fontSize: 11.0,
+                            fontSize: 10.0,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF64748B),
-                            letterSpacing: 1.0,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         TextFormField(
@@ -129,34 +128,50 @@ class _LoginPageState extends State<LoginPage> {
                           keyboardType: TextInputType.emailAddress,
                           style: const TextStyle(
                             fontSize: 16.0,
-                            color: Color(0xFF1E293B),
+                            color: Color(0xFF0F172A),
                           ),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Nombre de usuario',
-                            hintStyle: TextStyle(color: Color(0xFFCBD5E1)),
-                            contentPadding: EdgeInsets.symmetric(vertical: 8.0),
-                            enabledBorder: UnderlineInputBorder(
+                            hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+                            fillColor: MaterialStateColor.resolveWith((states) {
+                              if (states.contains(MaterialState.disabled)) {
+                                return const Color(0xFFF8FAFC);
+                              }
+                              if (states.contains(MaterialState.hovered)) {
+                                return const Color(0xFFF8FAFC); // 4% de oscurecimiento en hover
+                              }
+                              return Colors.transparent;
+                            }),
+                            filled: true,
+                            enabledBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
-                                color: Color(0xFFE2E8F0),
-                                width: 1.5,
+                                color: inputBorderColor,
+                                width: borderThickness,
                               ),
                             ),
-                            focusedBorder: UnderlineInputBorder(
+                            focusedBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
                                 color: AppColors.primary,
-                                width: 2.0,
+                                width: borderThickness, // Evita cambio de geometría en focus
                               ),
                             ),
-                            errorBorder: UnderlineInputBorder(
+                            errorBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
                                 color: AppColors.errorColor,
-                                width: 1.5,
+                                width: borderThickness,
                               ),
                             ),
-                            focusedErrorBorder: UnderlineInputBorder(
+                            focusedErrorBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
                                 color: AppColors.errorColor,
-                                width: 2.0,
+                                width: borderThickness,
+                              ),
+                            ),
+                            disabledBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Color(0xFFF1F5F9),
+                                width: borderThickness,
                               ),
                             ),
                           ),
@@ -167,16 +182,16 @@ class _LoginPageState extends State<LoginPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 32.0),
+                        const SizedBox(height: 36.0),
 
                         // Campo de Contraseña
                         const Text(
-                          'Contraseña',
+                          'CONTRASEÑA',
                           style: TextStyle(
-                            fontSize: 11.0,
+                            fontSize: 10.0,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF64748B),
-                            letterSpacing: 1.0,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         TextFormField(
@@ -184,39 +199,53 @@ class _LoginPageState extends State<LoginPage> {
                           obscureText: _obscurePassword,
                           style: const TextStyle(
                             fontSize: 16.0,
-                            color: Color(0xFF1E293B),
+                            color: Color(0xFF0F172A),
                           ),
                           decoration: InputDecoration(
                             hintText: '••••••••',
                             hintStyle: const TextStyle(
-                              color: Color(0xFFCBD5E1),
+                              color: Color(0xFF94A3B8),
                               letterSpacing: 2.0,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 8.0,
-                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0),
+                            fillColor: MaterialStateColor.resolveWith((states) {
+                              if (states.contains(MaterialState.disabled)) {
+                                return const Color(0xFFF8FAFC);
+                              }
+                              if (states.contains(MaterialState.hovered)) {
+                                return const Color(0xFFF8FAFC);
+                              }
+                              return Colors.transparent;
+                            }),
+                            filled: true,
                             enabledBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
-                                color: Color(0xFFE2E8F0),
-                                width: 1.5,
+                                color: inputBorderColor,
+                                width: borderThickness,
                               ),
                             ),
                             focusedBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
                                 color: AppColors.primary,
-                                width: 2.0,
+                                width: borderThickness, // Mismo grosor
                               ),
                             ),
                             errorBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
                                 color: AppColors.errorColor,
-                                width: 1.5,
+                                width: borderThickness,
                               ),
                             ),
                             focusedErrorBorder: const UnderlineInputBorder(
                               borderSide: BorderSide(
                                 color: AppColors.errorColor,
-                                width: 2.0,
+                                width: borderThickness,
+                              ),
+                            ),
+                            disabledBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                color: Color(0xFFF1F5F9),
+                                width: borderThickness,
                               ),
                             ),
                             suffixIcon: IconButton(
@@ -224,7 +253,7 @@ class _LoginPageState extends State<LoginPage> {
                                 _obscurePassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: const Color(0xFF94A3B8),
+                                color: const Color(0xFF64748B),
                                 size: 20.0,
                               ),
                               onPressed: () {
@@ -241,7 +270,7 @@ class _LoginPageState extends State<LoginPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 48.0),
+                        const SizedBox(height: 56.0),
 
                         // Botón Entrar
                         ListenableBuilder(
@@ -256,11 +285,10 @@ class _LoginPageState extends State<LoginPage> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
-                                  disabledBackgroundColor: AppColors.primary
-                                      .withOpacity(0.6),
+                                  disabledBackgroundColor: AppColors.primary.withOpacity(0.55), // Opacidad según checklist
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8.0),
+                                    borderRadius: BorderRadius.circular(6.0), // Bordes de 6px precisos/utilitarios
                                   ),
                                 ),
                                 child: isLoading
@@ -269,10 +297,7 @@ class _LoginPageState extends State<LoginPage> {
                                         width: 20.0,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2.0,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                         ),
                                       )
                                     : const Text(
@@ -300,7 +325,7 @@ class _LoginPageState extends State<LoginPage> {
                                 style: TextStyle(
                                   fontSize: 10.0,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF94A3B8),
+                                  color: Color(0xFF64748B),
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -317,15 +342,13 @@ class _LoginPageState extends State<LoginPage> {
                                       style: TextStyle(
                                         fontSize: 10.0,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF64748B),
+                                        color: Color(0xFF475569),
                                         letterSpacing: 0.5,
                                       ),
                                     ),
                                   ),
                                   const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8.0,
-                                    ),
+                                    padding: EdgeInsets.symmetric(horizontal: 8.0),
                                     child: Text(
                                       '•',
                                       style: TextStyle(
@@ -343,7 +366,7 @@ class _LoginPageState extends State<LoginPage> {
                                       style: TextStyle(
                                         fontSize: 10.0,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF64748B),
+                                        color: Color(0xFF475569),
                                         letterSpacing: 0.5,
                                       ),
                                     ),
