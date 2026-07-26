@@ -1,0 +1,9 @@
+{
+  "skill": "architecture-docs",
+  "version": "0.3.0",
+  "agent": "copilot",
+  "scope": "project",
+  "checksum": "sha256:b420efc4628a7f19154fe424d795bb3416cc5b2d0adbc8dafa2906e1ac127132",
+  "installedAt": "2026-07-26T05:10:56.392Z",
+  "installer": "@tecture/skill"
+}
