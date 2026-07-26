@@ -11,4 +11,5 @@ class ApiConfig {
 
   static Uri get loginUri => Uri.parse('$baseUrl/login.php');
   static Uri get meUri => Uri.parse('$baseUrl/me.php');
+  static Uri get guardarUbicacionUri => Uri.parse('$baseUrl/guardar_ubicacion.php');
 }

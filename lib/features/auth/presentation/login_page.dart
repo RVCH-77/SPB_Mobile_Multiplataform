@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
               padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight - 48.0,
+                  minHeight: constraints.hasBoundedHeight ? constraints.maxHeight - 48.0 : 0.0,
                 ),
                 child: IntrinsicHeight(
                   child: Form(
