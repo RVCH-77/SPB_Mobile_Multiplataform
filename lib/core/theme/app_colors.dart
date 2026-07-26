@@ -14,6 +14,11 @@ class AppColors {
   static const Color cardColor = Color(0xffFFFFFF);
   static const Color buttonColor = Color(0xff7A1C2E);
   static const Color buttonTextColor = Color(0xffFFFFFF);
-  static const Color buttonDisabledColor = Color(0xff9E9E9E);
-  static const Color buttonDisabledTextColor = Color(0xffFFFFFF);
+  static const Color buttonDisabledColor = Color(0xff6C757D);
+  static const Color buttonDisabledTextColor = Color.fromARGB(
+    255,
+    255,
+    255,
+    255,
+  );
 }
