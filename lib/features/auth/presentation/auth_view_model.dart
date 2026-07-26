@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:first_app/features/auth/data/app_repository.dart';
 import 'package:first_app/features/auth/models/user_model.dart';
 
@@ -25,6 +26,13 @@ class AuthViewModel extends ChangeNotifier {
 
     try {
       _currentUser = await _repository.login(usuario, pass);
+      
+      // Guardar token en almacenamiento local si existe
+      if (_currentUser?.token != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', _currentUser!.token!);
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -70,5 +78,10 @@ class AuthViewModel extends ChangeNotifier {
     _errorMessage = null;
     _isLoading = false;
     notifyListeners();
+
+    // Eliminar token asíncronamente
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove('auth_token');
+    });
   }
 }

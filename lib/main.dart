@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:first_app/core/theme/app_colors.dart';
 import 'package:first_app/core/theme/app_theme.dart';
 import 'package:first_app/features/auth/data/app_repository.dart';
@@ -26,6 +27,15 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _repository = AppRepository();
     _authViewModel = AuthViewModel(repository: _repository);
+    _checkSavedSession();
+  }
+
+  Future<void> _checkSavedSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    if (token != null) {
+      await _authViewModel.tryAutoLogin(token);
+    }
   }
 
   @override
