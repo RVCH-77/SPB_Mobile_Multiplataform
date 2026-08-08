@@ -216,7 +216,7 @@ class LocationService {
           'latitud': position.latitude,
           'longitud': position.longitude,
           'accuracy': position.accuracy,
-          'timestamp': DateTime.now().toIso8601String(),
+          'timestamp': DateTime.now().toUtc().toIso8601String(),
         }),
       );
 

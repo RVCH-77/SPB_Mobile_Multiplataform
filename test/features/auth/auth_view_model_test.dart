@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:first_app/features/auth/data/app_repository.dart';
 import 'package:first_app/features/auth/models/user_model.dart';
 import 'package:first_app/features/auth/presentation/auth_view_model.dart';
@@ -35,6 +36,10 @@ void main() {
       rol: 'operador',
       token: 'valid_token',
     );
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+    });
 
     test('Estado inicial es correcto', () {
       final repository = MockAppRepository();
