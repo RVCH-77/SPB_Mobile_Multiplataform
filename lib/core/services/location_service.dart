@@ -123,11 +123,6 @@ class LocationService {
         distanceFilter: 20, // Notifica cada 20 metros recorridos
         forceLocationManager: false,
         intervalDuration: const Duration(seconds: 15),
-        // Crea una notificación permanente en la barra de tareas de Android para mantener el servicio activo en background
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationText: "SPB Móvil está registrando tu ruta de trabajo en segundo plano.",
-          notificationTitle: "Rastreo de ubicación activo",
-        ),
       );
     } else if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
       locationSettings = AppleSettings(

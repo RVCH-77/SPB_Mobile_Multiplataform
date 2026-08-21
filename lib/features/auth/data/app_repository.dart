@@ -21,7 +21,7 @@ class AppRepository {
   Future<UserModel> login(String usuario, String pass) async {
     try {
       final response = await _client.post(
-        ApiConfig.loginUri,
+        ApiConfig.loginOperadoresUri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'usuario': usuario,

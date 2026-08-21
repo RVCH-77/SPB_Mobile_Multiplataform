@@ -76,5 +76,9 @@
 	<array>
 		<string>location</string>
 	</array>  
+	<key>NSCameraUsageDescription</key>
+	<string>Necesitamos acceso a la cámara para tomar fotos de las evidencias de entrega y odómetro.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Necesitamos acceso a la galería para seleccionar imágenes de evidencia y odómetro.</string>
 </dict>
 </plist>

@@ -6,6 +6,7 @@ import 'package:first_app/features/auth/data/app_repository.dart';
 import 'package:first_app/features/auth/presentation/auth_view_model.dart';
 import 'package:first_app/features/auth/presentation/login_page.dart';
 import 'package:first_app/core/services/location_service.dart';
+import 'package:first_app/features/route/presentation/route_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -251,6 +252,77 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     );
                   },
+                ),
+                const SizedBox(height: 24.0),
+                
+                // Botón/Tarjeta premium para acceder a las Rutas
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    side: BorderSide(color: Colors.grey.shade200, width: 1),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12.0),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RoutePage(authViewModel: widget.viewModel),
+                        ),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.route_outlined,
+                              color: AppColors.primary,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 16.0),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user?.rol == 'operador' ? 'Mis Rutas Asignadas' : 'Ver Control de Rutas',
+                                  style: const TextStyle(
+                                    fontSize: 16.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 4.0),
+                                Text(
+                                  user?.rol == 'operador'
+                                      ? 'Consulta tus entregas, destino y choferes de apoyo.'
+                                      : 'Monitorea todas las rutas globales del sistema.',
+                                  style: TextStyle(
+                                    fontSize: 12.0,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
