@@ -22,6 +22,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final AppRepository _repository;
   late final AuthViewModel _authViewModel;
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -41,7 +42,10 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    LocationService.navigatorKey = navigatorKey;
+
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'SPB',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
@@ -73,6 +77,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  int _currentIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -100,234 +106,420 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  void _cerrarSesion() {
+    LocationService.detenerTrackingAutomatico();
+    widget.viewModel.logout();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Sesión cerrada'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = widget.viewModel.currentUser;
 
+    final tabs = [
+      _buildHomeTab(user),
+      RoutePage(authViewModel: widget.viewModel, showAppBar: false),
+      _buildProfileTab(user),
+    ];
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F5F6),
       appBar: AppBar(
-        title: Text(widget.title),
+        title: const Text(
+          'Panel Administrativo SPB',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0, color: Colors.white),
+        ),
+        elevation: 2,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF7A1C2E),
+                Color(0xFF82263E),
+                Color(0xFF111111),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
         actions: [
           IconButton(
             tooltip: 'Cerrar sesión',
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // Primero detenemos el rastreo antes de cerrar la sesión
-              LocationService.detenerTrackingAutomatico();
-              widget.viewModel.logout();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Sesión cerrada'),
-                  behavior: SnackBarBehavior.floating,
+            icon: const Icon(Icons.logout, color: Colors.white70),
+            onPressed: _cerrarSesion,
+          ),
+        ],
+      ),
+      body: tabs[_currentIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          selectedItemColor: const Color(0xFFE74361),
+          unselectedItemColor: const Color(0xFF4B4A4A),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.local_shipping),
+              label: 'Rutas',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle),
+              label: 'Perfil',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeTab(user) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Banner/Tarjeta de Bienvenida
+          Container(
+            padding: const EdgeInsets.all(20.0),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7A1C2E), Color(0xFFD33F58)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16.0),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7A1C2E).withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  child: Text(
+                    (user?.nombreChofer ?? user?.usuario ?? "U")
+                        .trim()
+                        .split(' ')
+                        .map((e) => e.isNotEmpty ? e[0] : '')
+                        .take(2)
+                        .join()
+                        .toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 20.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16.0),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '¡Bienvenido!',
+                        style: TextStyle(
+                          fontSize: 13.0,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      const SizedBox(height: 2.0),
+                      Text(
+                        user?.nombreChofer ?? user?.usuario ?? 'Usuario',
+                        style: const TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 28.0),
+
+          // Centro de Operaciones
+          const Text(
+            'CENTRO DE OPERACIONES',
+            style: TextStyle(
+              fontSize: 11.0,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4B4A4A),
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 12.0),
+          Card(
+            elevation: 2,
+            shadowColor: Colors.black.withOpacity(0.04),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16.0),
+              onTap: () {
+                setState(() {
+                  _currentIndex = 1; // Cambiar a pestaña de Rutas
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFffdadb), // primary-fixed-dim
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: const Icon(
+                        Icons.local_shipping,
+                        color: Color(0xFF5b021a), // primary
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16.0),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.rol == 'operador' ? 'Mis Rutas Asignadas' : 'Ver Control de Rutas',
+                            style: const TextStyle(
+                              fontSize: 16.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 2.0),
+                          Text(
+                            user?.rol == 'operador'
+                                ? 'Gestiona tus entregas y visitas.'
+                                : 'Monitorea todas las rutas globales.',
+                            style: const TextStyle(
+                              fontSize: 12.0,
+                              color: Color(0xFF4B4A4A),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 28.0),
+
+          // Telemetría & GPS
+          const Text(
+            'TELEMETRÍA Y RASTREO GPS',
+            style: TextStyle(
+              fontSize: 11.0,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4B4A4A),
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 12.0),
+          ValueListenableBuilder<bool>(
+            valueListenable: LocationService.trackingActivoNotifier,
+            builder: (context, trackingActivo, _) {
+              return Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: trackingActivo ? const Color(0xFFD4EDDA) : const Color(0xFFFFEDED),
+                  borderRadius: BorderRadius.circular(16.0),
+                  border: Border.all(
+                    color: trackingActivo ? const Color(0xFFC3E6CB) : const Color(0xFFFFC0C0),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10.0),
+                          decoration: BoxDecoration(
+                            color: trackingActivo ? Colors.green : Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.sensors,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 14.0),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                trackingActivo ? 'Rastreo Activo en Vivo' : 'Rastreo Inactivo',
+                                style: TextStyle(
+                                  fontSize: 15.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: trackingActivo ? const Color(0xFF155724) : const Color(0xFF721C24),
+                                ),
+                              ),
+                              const SizedBox(height: 2.0),
+                              Text(
+                                trackingActivo
+                                    ? 'Reportando coordenadas GPS de la ruta en segundo plano.'
+                                    : 'El servidor no puede recibir tu telemetría de ruta.',
+                                style: TextStyle(
+                                  fontSize: 12.0,
+                                  color: trackingActivo ? const Color(0xFF155724) : const Color(0xFF721C24),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (!trackingActivo) ...[
+                      const SizedBox(height: 16.0),
+                      ElevatedButton.icon(
+                        onPressed: _intentarIniciarTracking,
+                        icon: const Icon(Icons.play_arrow, size: 18),
+                        label: const Text(
+                          'ACTIVAR RASTREO GPS',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          elevation: 1,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               );
             },
           ),
         ],
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.account_circle,
-                  size: 80,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: 16.0),
-                Text(
-                  'Bienvenido, ${user?.usuario ?? "Usuario"}',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                Text(
-                  'Email: ${user?.email ?? "Sin correo"}',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 4.0),
-                Container(
-                  margin: const EdgeInsets.only(top: 8.0),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 4.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16.0),
-                  ),
-                  child: Text(
-                    'Rol: ${user?.rol.toUpperCase() ?? "Ninguno"}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40.0),
-                
-                // Card indicadora de estado de rastreo en tiempo real
-                ValueListenableBuilder<bool>(
-                  valueListenable: LocationService.trackingActivoNotifier,
-                  builder: (context, trackingActivo, _) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: trackingActivo
-                            ? Colors.green.shade50
-                            : Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(12.0),
-                        border: Border.all(
-                          color: trackingActivo
-                              ? Colors.green.shade200
-                              : Colors.orange.shade200,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                trackingActivo
-                                    ? Icons.sensors
-                                    : Icons.sensors_off,
-                                color: trackingActivo
-                                    ? Colors.green
-                                    : Colors.orange,
-                              ),
-                              const SizedBox(width: 8.0),
-                              Text(
-                                trackingActivo
-                                    ? 'Rastreo Automático Activo'
-                                    : 'Rastreo Automático Inactivo',
-                                style: TextStyle(
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: trackingActivo
-                                      ? Colors.green.shade900
-                                      : Colors.orange.shade900,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8.0),
-                          Text(
-                            trackingActivo
-                                ? 'Tu ubicación se está reportando automáticamente en segundo plano cada 20 metros.'
-                                : 'Activa el rastreo para que el panel administrativo pueda rastrear tu ruta.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 12.0,
-                              color: trackingActivo
-                                  ? Colors.green.shade700
-                                  : Colors.orange.shade700,
-                            ),
-                          ),
-                          if (!trackingActivo) ...[
-                            const SizedBox(height: 12.0),
-                            ElevatedButton(
-                              onPressed: _intentarIniciarTracking,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8.0),
-                                ),
-                              ),
-                              child: const Text('Activar Rastreo'),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24.0),
-                
-                // Botón/Tarjeta premium para acceder a las Rutas
-                Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                    side: BorderSide(color: Colors.grey.shade200, width: 1),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12.0),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => RoutePage(authViewModel: widget.viewModel),
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12.0),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.route_outlined,
-                              color: AppColors.primary,
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(width: 16.0),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user?.rol == 'operador' ? 'Mis Rutas Asignadas' : 'Ver Control de Rutas',
-                                  style: const TextStyle(
-                                    fontSize: 16.0,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                ),
-                                const SizedBox(height: 4.0),
-                                Text(
-                                  user?.rol == 'operador'
-                                      ? 'Consulta tus entregas, destino y choferes de apoyo.'
-                                      : 'Monitorea todas las rutas globales del sistema.',
-                                  style: TextStyle(
-                                    fontSize: 12.0,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+    );
+  }
+
+  Widget _buildProfileTab(user) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 46,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            child: Text(
+              (user?.nombreChofer ?? user?.usuario ?? "U")
+                  .trim()
+                  .split(' ')
+                  .map((e) => e.isNotEmpty ? e[0] : '')
+                  .take(2)
+                  .join()
+                  .toUpperCase(),
+              style: const TextStyle(
+                fontSize: 28.0,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 16.0),
+          Text(
+            user?.nombreChofer ?? user?.usuario ?? 'Usuario',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+          const SizedBox(height: 4.0),
+          Text(
+            user?.email ?? 'Sin correo',
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 24.0),
+          const Divider(),
+          const SizedBox(height: 16.0),
+          _buildProfileDetailRow('Rol:', user?.rol.toUpperCase() ?? 'OPERADOR', Icons.admin_panel_settings_outlined),
+          _buildProfileDetailRow('ID Chofer:', user?.idChofer?.toString() ?? 'N/A', Icons.badge_outlined),
+          _buildProfileDetailRow('ID Usuario:', user?.idUsuario.toString() ?? 'N/A', Icons.person_outline),
+          const SizedBox(height: 40.0),
+          ElevatedButton.icon(
+            onPressed: _cerrarSesion,
+            icon: const Icon(Icons.logout),
+            label: const Text('CERRAR SESIÓN'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.errorColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 24.0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileDetailRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF4B4A4A), size: 22),
+          const SizedBox(width: 16.0),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, color: Color(0xFF4B4A4A), fontWeight: FontWeight.bold),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+        ],
       ),
     );
   }

@@ -8,6 +8,9 @@ import 'package:first_app/core/network/api_config.dart';
 
 class LocationService {
   static StreamSubscription<Position>? _positionStreamSubscription;
+  static StreamSubscription<ServiceStatus>? _serviceStatusSubscription;
+  static GlobalKey<NavigatorState>? navigatorKey;
+  static bool _dialogoGpsAbierto = false;
   
   /// Notificador reactivo para saber en la UI si el tracking está activo o apagado.
   static final ValueNotifier<bool> trackingActivoNotifier = ValueNotifier<bool>(false);
@@ -156,6 +159,18 @@ class LocationService {
         }
       }, onError: (dynamic error) {
         debugPrint('Error en el flujo de ubicación: $error');
+        if (error is LocationServiceDisabledException || error.toString().contains('disabled')) {
+          mostrarAlertaGpsDesactivadoGlobal();
+        }
+      });
+
+      // Escuchar cambios del servicio GPS (activado/desactivado en el sistema)
+      _serviceStatusSubscription ??= Geolocator.getServiceStatusStream().listen((ServiceStatus status) {
+        if (status == ServiceStatus.disabled) {
+          mostrarAlertaGpsDesactivadoGlobal();
+        } else if (status == ServiceStatus.enabled) {
+          trackingActivoNotifier.value = true;
+        }
       });
 
       trackingActivoNotifier.value = true;
@@ -172,6 +187,10 @@ class LocationService {
       _positionStreamSubscription = null;
       trackingActivoNotifier.value = false;
       debugPrint('Tracking automático detenido.');
+    }
+    if (_serviceStatusSubscription != null) {
+      await _serviceStatusSubscription!.cancel();
+      _serviceStatusSubscription = null;
     }
   }
 
@@ -273,6 +292,58 @@ class LocationService {
         content: Text(mensaje),
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  /// Muestra una alerta global informando al usuario que debe reactivar su GPS
+  static void mostrarAlertaGpsDesactivadoGlobal() async {
+    final context = navigatorKey?.currentState?.overlay?.context;
+    if (context == null || !context.mounted) return;
+    if (_dialogoGpsAbierto) return;
+
+    _dialogoGpsAbierto = true;
+    trackingActivoNotifier.value = false;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.gps_off, color: Colors.red, size: 28),
+              SizedBox(width: 8),
+              Text('GPS Desactivado'),
+            ],
+          ),
+          content: const Text(
+            'Se ha desactivado la ubicación. Para continuar reportando tu ruta en tiempo real, activa el servicio de ubicación (GPS) de tu dispositivo.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Entendido', style: TextStyle(color: Colors.grey)),
+              onPressed: () {
+                _dialogoGpsAbierto = false;
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7A1C2E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Activar GPS'),
+              onPressed: () async {
+                _dialogoGpsAbierto = false;
+                Navigator.of(context).pop();
+                await Geolocator.openLocationSettings();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
