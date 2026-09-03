@@ -9,6 +9,8 @@ import 'package:first_app/core/network/api_config.dart';
 class LocationService {
   static StreamSubscription<Position>? _positionStreamSubscription;
   static StreamSubscription<ServiceStatus>? _serviceStatusSubscription;
+  static Timer? _trackingTimer;
+  static Position? _ultimaPosicion;
   static GlobalKey<NavigatorState>? navigatorKey;
   static bool _dialogoGpsAbierto = false;
   
@@ -114,16 +116,28 @@ class LocationService {
       return;
     }
 
-    // 2. Si ya hay una suscripción corriendo, la cancelamos primero para no duplicar procesos
+    // 2. Si ya hay una suscripción o temporizador corriendo, los cancelamos primero para no duplicar procesos
     await detenerTrackingAutomatico();
 
-    // 3. Configurar los ajustes de Geolocator para el segundo plano según la plataforma
+    // 3. Obtener y enviar ubicación inicial de inmediato (evita esperar el primer minuto del timer)
+    try {
+      final Position? posInicial = await obtenerUbicacionActual();
+      if (posInicial != null) {
+        _ultimaPosicion = posInicial;
+        debugPrint('Ubicación inicial obtenida: ${posInicial.latitude}, ${posInicial.longitude}');
+        await enviarUbicacion(idUsuario, posInicial, token: token);
+      }
+    } catch (e) {
+      debugPrint('Error al enviar la ubicación inicial: $e');
+    }
+
+    // 4. Configurar los ajustes de Geolocator para el segundo plano según la plataforma
     late final LocationSettings locationSettings;
 
     if (defaultTargetPlatform == TargetPlatform.android) {
       locationSettings = AndroidSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 20, // Notifica cada 20 metros recorridos
+        distanceFilter: 10, // Filtro más corto para actualizar la caché más seguido si hay movimiento
         forceLocationManager: false,
         intervalDuration: const Duration(seconds: 15),
       );
@@ -131,7 +145,7 @@ class LocationService {
       locationSettings = AppleSettings(
         accuracy: LocationAccuracy.high,
         activityType: ActivityType.fitness,
-        distanceFilter: 20, // Notifica cada 20 metros recorridos
+        distanceFilter: 10,
         pauseLocationUpdatesAutomatically: true,
         // Habilita el indicador azul de localización en la barra de estado de iOS cuando la app se minimiza
         showBackgroundLocationIndicator: true,
@@ -139,28 +153,41 @@ class LocationService {
     } else {
       locationSettings = const LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 20,
+        distanceFilter: 10,
       );
     }
 
-    // 4. Iniciar la escucha del Stream de geolocalización
+    // 5. Iniciar la escucha del Stream de geolocalización para actualizar _ultimaPosicion en caché
     try {
       _positionStreamSubscription = Geolocator.getPositionStream(
         locationSettings: locationSettings,
-      ).listen((Position position) async {
-        debugPrint('Ubicación obtenida automáticamente: ${position.latitude}, ${position.longitude}');
-        
-        // Enviar coordenadas a la base de datos mediante la API PHP
-        bool enviado = await enviarUbicacion(idUsuario, position, token: token);
-        if (enviado) {
-          debugPrint('Ubicación reportada exitosamente al panel.');
-        } else {
-          debugPrint('Error al enviar la ubicación al panel.');
-        }
+      ).listen((Position position) {
+        _ultimaPosicion = position;
+        debugPrint('Ubicación actualizada en caché: ${position.latitude}, ${position.longitude}');
       }, onError: (dynamic error) {
         debugPrint('Error en el flujo de ubicación: $error');
         if (error is LocationServiceDisabledException || error.toString().contains('disabled')) {
           mostrarAlertaGpsDesactivadoGlobal();
+        }
+      });
+
+      // 6. Configurar el Timer periódico para enviar la ubicación cada 1 minuto
+      _trackingTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+        Position? posAEnviar = _ultimaPosicion;
+        if (posAEnviar == null) {
+          debugPrint('Caché vacía, intentando obtener ubicación en tiempo real...');
+          posAEnviar = await obtenerUbicacionActual();
+        }
+        if (posAEnviar != null) {
+          debugPrint('Timer de 1 min: Enviando ubicación: ${posAEnviar.latitude}, ${posAEnviar.longitude}');
+          bool enviado = await enviarUbicacion(idUsuario, posAEnviar, token: token);
+          if (enviado) {
+            debugPrint('Ubicación reportada exitosamente por el Timer.');
+          } else {
+            debugPrint('Error al enviar la ubicación en el Timer.');
+          }
+        } else {
+          debugPrint('Timer de 1 min: No se pudo obtener ninguna ubicación para enviar.');
         }
       });
 
@@ -174,7 +201,7 @@ class LocationService {
       });
 
       trackingActivoNotifier.value = true;
-      debugPrint('Tracking automático activado con éxito.');
+      debugPrint('Tracking automático con Timer de 1 min activado con éxito.');
     } catch (e) {
       debugPrint('No se pudo inicializar el stream de ubicación: $e');
     }
@@ -182,6 +209,13 @@ class LocationService {
 
   /// Detiene el rastreo automático de ubicación.
   static Future<void> detenerTrackingAutomatico() async {
+    if (_trackingTimer != null) {
+      _trackingTimer!.cancel();
+      _trackingTimer = null;
+      debugPrint('Timer de tracking cancelado.');
+    }
+    _ultimaPosicion = null;
+
     if (_positionStreamSubscription != null) {
       await _positionStreamSubscription!.cancel();
       _positionStreamSubscription = null;
@@ -198,6 +232,17 @@ class LocationService {
   /// Retorna `null` si falla u ocurre algún error o falta de permisos.
   static Future<Position?> obtenerUbicacionActual() async {
     try {
+      // 1. Si el tracking en segundo plano está activo y tenemos una ubicación reciente (menos de 5 minutos),
+      // la usamos de inmediato. Esto evita que el GPS se recalcule desde cero dentro de edificios o casas
+      // (donde se pierde la señal de los satélites directos, dando un margen de error de ~40m o quedándose en espera).
+      if (_ultimaPosicion != null) {
+        final diferenciaTiempo = DateTime.now().difference(_ultimaPosicion!.timestamp);
+        if (diferenciaTiempo.inMinutes < 5) {
+          debugPrint('Ubicación obtenida de caché caliente (precisión del sensor reciente): ${_ultimaPosicion!.latitude}, ${_ultimaPosicion!.longitude}');
+          return _ultimaPosicion;
+        }
+      }
+
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) return null;
 
@@ -206,6 +251,7 @@ class LocationService {
         return null;
       }
 
+      // 2. Si no hay posición reciente en caché, solicitamos una nueva al GPS
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 15),
@@ -234,9 +280,15 @@ class LocationService {
         }),
       );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> body = jsonDecode(response.body);
-        return body['success'] == true;
+      if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+        try {
+          final dynamic body = jsonDecode(response.body);
+          if (body is Map<String, dynamic>) {
+            return body['success'] == true;
+          }
+        } catch (e) {
+          debugPrint('Error al decodificar respuesta de ubicación: $e');
+        }
       }
       return false;
     } catch (e) {

@@ -784,58 +784,7 @@ class _DeliveryPageState extends State<DeliveryPage> {
             const SizedBox(height: 16.0),
 
             // Info de Guía Escaneada en Campo
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.qr_code, size: 18, color: Colors.grey),
-                const SizedBox(width: 8.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Guía Escaneada en Campo:',
-                        style: TextStyle(fontSize: 12.0, color: Colors.grey, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4.0),
-                      if (codigoEscaneado != null) ...[
-                        Row(
-                          children: [
-                            Text(
-                              codigoEscaneado,
-                              style: const TextStyle(fontSize: 14.0, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 8.0),
-                            // Badge de coincidencia
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
-                              decoration: BoxDecoration(
-                                color: coincide ? Colors.green.shade50 : Colors.amber.shade50,
-                                borderRadius: BorderRadius.circular(6.0),
-                                border: Border.all(color: coincide ? Colors.green.shade200 : Colors.amber.shade200),
-                              ),
-                              child: Text(
-                                coincide ? '✓ Coincide' : '⚠️ No Coincide',
-                                style: TextStyle(
-                                  fontSize: 10.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: coincide ? Colors.green.shade800 : Colors.amber.shade900,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        const Text(
-                          'Pendiente de escaneo / vinculación',
-                          style: TextStyle(fontSize: 13.0, fontStyle: FontStyle.italic, color: Colors.red),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            _buildValidationStatusBox(codigoEscaneado, coincide),
             const SizedBox(height: 24.0),
 
             // Botones de Operación del Operador
@@ -883,6 +832,127 @@ class _DeliveryPageState extends State<DeliveryPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildValidationStatusBox(String? codigoEscaneado, bool coincide) {
+    if (codigoEscaneado == null) {
+      return Container(
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(8.0),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.qr_code_scanner_outlined, color: Colors.red.shade700, size: 24),
+            const SizedBox(width: 12.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ESCANEO PENDIENTE',
+                    style: TextStyle(
+                      fontSize: 12.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 2.0),
+                  Text(
+                    'Por favor, escanea el código del paquete antes de reportar.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.red.shade900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (coincide) {
+      return Container(
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(8.0),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green.shade700, size: 24),
+            const SizedBox(width: 12.0),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '✓ GUÍA VERIFICADA',
+                    style: TextStyle(
+                      fontSize: 12.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green.shade800,
+                    ),
+                  ),
+                  const SizedBox(height: 2.0),
+                  Text(
+                    '¡Coincide! Escaneado: $codigoEscaneado',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.green.shade900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // No coincide
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(8.0),
+        border: Border.all(color: Colors.amber.shade300),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_outlined, color: Colors.amber.shade800, size: 24),
+          const SizedBox(width: 12.0),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '⚠️ GUÍA NO COINCIDE',
+                  style: TextStyle(
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber.shade900,
+                  ),
+                ),
+                const SizedBox(height: 2.0),
+                Text(
+                  'Escaneado: $codigoEscaneado (Verifica si es el paquete correcto)',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: Colors.amber.shade900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

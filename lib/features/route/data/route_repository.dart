@@ -52,14 +52,28 @@ class RouteRepository {
 
       final response = await _client.get(uri, headers: headers);
       
-      // Decodificar el JSON de respuesta
-      final Map<String, dynamic> body = jsonDecode(response.body);
+      if (response.body.trim().isEmpty) {
+        throw RouteException('El servidor no devolvió datos (HTTP ${response.statusCode})');
+      }
+
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw RouteException('Respuesta inválida del servidor (HTTP ${response.statusCode})');
+      }
+
+      if (decoded is! Map<String, dynamic>) {
+        throw RouteException('Formato de datos no reconocido.');
+      }
+
+      final Map<String, dynamic> body = decoded;
 
       if (response.statusCode == 200 && body['success'] == true) {
         final List<dynamic> data = (body['rutas'] ?? body['data']) as List<dynamic>? ?? [];
         return data.map((item) => RutaModel.fromJson(item as Map<String, dynamic>)).toList();
       } else {
-        final String errorMsg = body['message'] as String? ?? 'Error al obtener la lista de rutas.';
+        final String errorMsg = body['message'] as String? ?? 'Error al obtener la lista de rutas (HTTP ${response.statusCode}).';
         throw RouteException(errorMsg);
       }
     } on http.ClientException {

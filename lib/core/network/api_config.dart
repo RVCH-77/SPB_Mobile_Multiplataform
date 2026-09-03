@@ -18,7 +18,7 @@ class ApiConfig {
   static Uri get finalizarRutaUri => Uri.parse('$baseUrl/finalizar_ruta.php');
 
   // Endpoints V2 para operadores
-  static Uri get loginOperadoresUri => Uri.parse('$operadoresBaseUrl/login.php');
+  static Uri get loginOperadoresUri => loginUri;
   static Uri get rutasOperadoresUri => Uri.parse('$operadoresBaseUrl/rutas.php');
   static Uri get detallesRutaUri => Uri.parse('$operadoresBaseUrl/detalles_ruta.php');
   static Uri get actualizarEntregaUri => Uri.parse('$operadoresBaseUrl/actualizar_entrega.php');

@@ -11,8 +11,13 @@ import 'package:first_app/features/delivery_status/presentation/iniciar_ruta_dia
 
 class RoutePage extends StatefulWidget {
   final AuthViewModel authViewModel;
+  final bool showAppBar;
 
-  const RoutePage({super.key, required this.authViewModel});
+  const RoutePage({
+    super.key,
+    required this.authViewModel,
+    this.showAppBar = true,
+  });
 
   @override
   State<RoutePage> createState() => _RoutePageState();
@@ -123,155 +128,159 @@ class _RoutePageState extends State<RoutePage> {
     final isOperador = user?.rol == 'operador';
     final canOperate = isOperador || (user?.idChofer != null && user?.idChofer != 0);
 
+    final Widget content = Column(
+      children: [
+        // Filtros
+        Container(
+          padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 8.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _selectDate(context),
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      label: Text(
+                        _selectedDate == null
+                            ? 'Filtrar Fecha'
+                            : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                        style: const TextStyle(fontSize: 12.0),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _selectedDate = null;
+                          _selectedEstatus = null;
+                        });
+                        _loadData();
+                      },
+                      icon: const Icon(Icons.clear_all, size: 16),
+                      label: const Text('Limpiar', style: TextStyle(fontSize: 12.0)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8.0),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildStatusChip('Todas', null),
+                    _buildStatusChip('Pendiente', 'pendiente'),
+                    _buildStatusChip('En Proceso', 'en_proceso'),
+                    _buildStatusChip('Terminado', 'terminado'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Lista
+        Expanded(
+          child: ListenableBuilder(
+            listenable: _viewModel,
+            builder: (context, _) {
+              if (_viewModel.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (_viewModel.errorMessage != null) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          _viewModel.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 14, color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadData,
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              if (_viewModel.rutas.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.route_outlined, size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No tienes rutas asignadas para hoy',
+                        style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async => _loadData(),
+                color: AppColors.primary,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  itemCount: _viewModel.rutas.length,
+                  itemBuilder: (context, index) {
+                    final ruta = _viewModel.rutas[index];
+                    return _buildRutaCard(ruta, canOperate);
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+
+    if (!widget.showAppBar) {
+      return content;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(isOperador ? 'Mis Rutas Asignadas' : 'Control Global de Rutas'),
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          // Sección de Filtros
-          Container(
-            padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 8.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Fila de Filtro de Fecha e Info de Estado
-                Row(
-                  children: [
-                    // Botón Selector de Fecha
-                    OutlinedButton.icon(
-                      onPressed: () => _selectDate(context),
-                      icon: const Icon(Icons.calendar_today, size: 16),
-                      label: Text(
-                        _selectedDate == null
-                            ? 'Seleccionar Fecha'
-                            : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20.0),
-                        ),
-                      ),
-                    ),
-                    if (_selectedDate != null) ...[
-                      const SizedBox(width: 4.0),
-                      IconButton(
-                        icon: const Icon(Icons.close, size: 18),
-                        onPressed: _clearDate,
-                        tooltip: 'Limpiar Fecha',
-                      ),
-                    ],
-                    const Spacer(),
-                    Text(
-                      'Filtros Activos',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8.0),
-
-                // Desplazamiento horizontal de ChoiceChips para Estatus
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildStatusChip('Todas', null),
-                      _buildStatusChip('Pendientes', 'pendiente'),
-                      _buildStatusChip('En Proceso', 'en_proceso'),
-                      _buildStatusChip('Terminadas', 'terminado'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Listado de Rutas (Usa ListenableBuilder para escuchar el ViewModel)
-          Expanded(
-            child: ListenableBuilder(
-              listenable: _viewModel,
-              builder: (context, _) {
-                if (_viewModel.isLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    ),
-                  );
-                }
-
-                if (_viewModel.errorMessage != null) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, size: 48, color: AppColors.errorColor),
-                          const SizedBox(height: 12),
-                          Text(
-                            _viewModel.errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _loadData,
-                            child: const Text('Reintentar'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                if (_viewModel.rutas.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.route_outlined, size: 64, color: Colors.grey.shade400),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No se encontraron rutas asignadas.',
-                          style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: () async => _loadData(),
-                  color: AppColors.primary,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16.0),
-                    itemCount: _viewModel.rutas.length,
-                    itemBuilder: (context, index) {
-                      final ruta = _viewModel.rutas[index];
-                      return _buildRutaCard(ruta, canOperate);
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+      body: content,
     );
   }
 

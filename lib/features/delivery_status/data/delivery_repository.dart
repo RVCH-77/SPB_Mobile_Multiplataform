@@ -34,7 +34,23 @@ class DeliveryRepository {
       }
 
       final response = await _client.get(uri, headers: headers);
-      final Map<String, dynamic> body = jsonDecode(response.body);
+      
+      if (response.body.trim().isEmpty) {
+        throw DeliveryException('El servidor no devolvió respuesta (HTTP ${response.statusCode})');
+      }
+
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw DeliveryException('Respuesta inválida del servidor (HTTP ${response.statusCode})');
+      }
+
+      if (decoded is! Map<String, dynamic>) {
+        throw DeliveryException('Formato de datos no reconocido.');
+      }
+
+      final Map<String, dynamic> body = decoded;
 
       if (response.statusCode == 200 && body['success'] == true) {
         final List<dynamic> paquetesJson = body['paquetes'] as List<dynamic>? ?? [];
@@ -48,7 +64,7 @@ class DeliveryRepository {
           'paquetes': paquetes,
         };
       } else {
-        final String errorMsg = body['message'] as String? ?? 'Error al obtener detalles de la ruta.';
+        final String errorMsg = body['message'] as String? ?? 'Error al obtener detalles de la ruta (HTTP ${response.statusCode}).';
         throw DeliveryException(errorMsg);
       }
     } on http.ClientException {
@@ -107,13 +123,28 @@ class DeliveryRepository {
         body: jsonEncode(payload),
       );
 
-      final Map<String, dynamic> body = jsonDecode(response.body);
+      if (response.body.trim().isEmpty) {
+        throw DeliveryException('El servidor no devolvió respuesta (HTTP ${response.statusCode})');
+      }
+
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw DeliveryException('Respuesta inválida del servidor (HTTP ${response.statusCode})');
+      }
+
+      if (decoded is! Map<String, dynamic>) {
+        throw DeliveryException('Formato de respuesta inesperado.');
+      }
+
+      final Map<String, dynamic> body = decoded;
 
       if (response.statusCode == 200 && body['success'] == true) {
         final Map<String, dynamic> paqueteData = body['paquete'] as Map<String, dynamic>? ?? {};
         return PaqueteModel.fromJson(paqueteData);
       } else {
-        final String errorMsg = body['message'] as String? ?? 'Error al actualizar el estado del paquete.';
+        final String errorMsg = body['message'] as String? ?? 'Error al actualizar el estado del paquete (HTTP ${response.statusCode}).';
         throw DeliveryException(errorMsg);
       }
     } on http.ClientException {
@@ -186,12 +217,27 @@ class DeliveryRepository {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      final Map<String, dynamic> body = jsonDecode(response.body);
+      if (response.body.trim().isEmpty) {
+        throw DeliveryException('El servidor no devolvió respuesta (HTTP ${response.statusCode})');
+      }
+
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw DeliveryException('Respuesta inválida del servidor (HTTP ${response.statusCode})');
+      }
+
+      if (decoded is! Map<String, dynamic>) {
+        throw DeliveryException('Formato de respuesta no reconocido.');
+      }
+
+      final Map<String, dynamic> body = decoded;
 
       if (response.statusCode == 200 && body['success'] == true) {
         return true;
       } else {
-        final String errorMsg = body['message'] as String? ?? 'Error al actualizar el estado de la ruta.';
+        final String errorMsg = body['message'] as String? ?? 'Error al actualizar el estado de la ruta (HTTP ${response.statusCode}).';
         throw DeliveryException(errorMsg);
       }
     } on http.ClientException {

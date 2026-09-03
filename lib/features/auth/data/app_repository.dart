@@ -29,7 +29,22 @@ class AppRepository {
         }),
       );
 
-      final Map<String, dynamic> body = jsonDecode(response.body);
+      if (response.body.trim().isEmpty) {
+        throw AuthException('El servidor no devolvió respuesta (HTTP ${response.statusCode})');
+      }
+
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw AuthException('Respuesta inválida del servidor (HTTP ${response.statusCode})');
+      }
+
+      if (decoded is! Map<String, dynamic>) {
+        throw AuthException('Formato de respuesta inesperado del servidor');
+      }
+
+      final Map<String, dynamic> body = decoded;
 
       if (response.statusCode == 200 && body['success'] == true) {
         final String token = body['token'] as String;
@@ -37,7 +52,7 @@ class AppRepository {
         
         return UserModel.fromJson(userData, token: token);
       } else {
-        final String errorMsg = body['message'] as String? ?? 'Error desconocido al iniciar sesión';
+        final String errorMsg = body['message'] as String? ?? 'Error al iniciar sesión (HTTP ${response.statusCode})';
         throw AuthException(errorMsg);
       }
     } on http.ClientException {
@@ -60,13 +75,28 @@ class AppRepository {
         },
       );
 
-      final Map<String, dynamic> body = jsonDecode(response.body);
+      if (response.body.trim().isEmpty) {
+        throw AuthException('El servidor no devolvió respuesta (HTTP ${response.statusCode})');
+      }
+
+      final dynamic decoded;
+      try {
+        decoded = jsonDecode(response.body);
+      } on FormatException {
+        throw AuthException('Respuesta inválida del servidor (HTTP ${response.statusCode})');
+      }
+
+      if (decoded is! Map<String, dynamic>) {
+        throw AuthException('Formato de datos no reconocido.');
+      }
+
+      final Map<String, dynamic> body = decoded;
 
       if (response.statusCode == 200 && body['success'] == true) {
         final Map<String, dynamic> userData = body['data'] as Map<String, dynamic>;
         return UserModel.fromJson(userData, token: token);
       } else {
-        final String errorMsg = body['message'] as String? ?? 'Error al obtener perfil';
+        final String errorMsg = body['message'] as String? ?? 'Error al obtener perfil (HTTP ${response.statusCode})';
         throw AuthException(errorMsg);
       }
     } on http.ClientException {
